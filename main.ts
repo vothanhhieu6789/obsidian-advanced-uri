@@ -1,4 +1,4 @@
-import { requestUrl, Plugin } from "obsidian";
+import { parseYaml, Plugin } from "obsidian";
 
 // Remember to rename these classes and interfaces!
 
@@ -18,7 +18,6 @@ export default class MyPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.workspace.on("file-menu", (menu, file, source) => {
-				console.log(source);
 				if (
 					!(
 						source === "more-options" ||
@@ -28,23 +27,24 @@ export default class MyPlugin extends Plugin {
 				) {
 					return;
 				}
+
 				menu.addItem((item) => {
 					item.setTitle(`Send to Things`)
 						.setIcon("link")
 						.setSection("info")
 						.onClick((_) => {
-							window.open("things:///add?title=test&notes=url&show-quick-entry=true");
+							this.app.vault.read(file).then((note) => {
+								const note_property = parseYaml(
+									note.split("---")[1]
+								);
+								const obsidian_uri = encodeURIComponent(`obsidian://advanced-uri?vault=${file.vault.getName()}&uid=${note_property.id}`)
+								// console.log(obsidian_uri)
+								window.open(`things:///add?title=${file.basename}&notes=${obsidian_uri}&show-quick-entry=true`);
+							});
 						});
 				});
 			})
 		);
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, "click", (evt: MouseEvent) => {
-			console.log("click", evt);
-		});
-
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(
 			window.setInterval(() => console.log("setInterval"), 5 * 60 * 1000)
